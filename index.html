@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.3 - Combo Fix & Exact Fit</title>
+    <title>둥둥그라운드 v1.8.4 - Spacebar Start Support</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -20,7 +20,6 @@
             box-shadow: 0 0 50px rgba(0,0,0,0.5); 
         }
 
-        /* 메인 화면: 배경 이미지와 리브 캔버스 정규격 배치 */
         #main-screen { 
             position: absolute; 
             inset: 0; 
@@ -40,7 +39,6 @@
 
         canvas { display: block; width: 100%; height: 100%; outline: none; -webkit-tap-highlight-color: transparent; }
         
-        /* HUD UI */
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
         .hud-info { width: 100%; padding: 9px 20px 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
@@ -113,7 +111,20 @@
     }
     window.addEventListener('load', initRive);
 
+    /* --- PC 스페이스바 입력 감지 이벤트 추가 --- */
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            if (state === 'MAIN') {
+                forceStart();
+            } else if (state === 'PLAY') {
+                pDir *= -1; // 인게임 중에는 방향 전환
+                windTimer = 0; windAlphaBase = 0;
+            }
+        }
+    });
+
     function forceStart() {
+        if (state !== 'MAIN') return; // 중복 실행 방지
         if (audioCtx.state === 'suspended') audioCtx.resume();
         if(riveInstance) riveInstance.cleanup(); 
         document.getElementById('main-screen').style.display = 'none';
@@ -216,9 +227,8 @@
         if(state === 'END') return;
         frame++; 
         
-        // ★ 황금 고구마(isGoldFever) 콤보 유지 로직 복구 ★
         if (isGoldFever) {
-            comboTimer = 30; // 피버 상태일 때 타이머를 최대치로 고정
+            comboTimer = 30;
         } else {
             if (comboTimer > 0) comboTimer--; 
             else combo = 0; 
@@ -248,7 +258,7 @@
                 } else if(o.type === 'GOLD') triggerGoldFever();
                 else { 
                     playSound('item'); score += (combo >= 20) ? 2 : 1; addCombo(); 
-                    if(isGoldFever) isGoldFever = false; // 상자 획득 시 피버 상태 해제
+                    if(isGoldFever) isGoldFever = false; 
                     fx.push({ x: o.x, y: o.y, img: imgs.effect, life: 60, follow: false, vy: -5, isEffect: true }); 
                 }
                 objects.splice(i, 1);
