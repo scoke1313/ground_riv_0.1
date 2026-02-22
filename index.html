@@ -178,7 +178,7 @@
         else objects.push({ x, y: spawnY, type: 'CRATE', img: imgs.crate });
     }
 
-    /* 라이프 UI 업데이트: 빨간색 로직 없이 x 3 형식 유지 */
+    /* 라이프 UI 업데이트: 빨간색 변동 로직 제거 */
     function updateLifeUI() { 
         const lifeTextEl = document.getElementById('life-text');
         if(lifeTextEl) {
