@@ -29,10 +29,10 @@
         .ingame-score-bg img { width: 28px; height: 28px; object-fit: contain; }
         .ingame-score-bg span { font-family: "Tomorrow", sans-serif; font-size: 18px; font-weight: 600; color: #000; }
 
-        /* [생명표시UI 유지] 이미지 40x40, 500굵기 */
+        /* 라이프 UI: 간격 2px, 숫자 17px, 컬러 블랙 고정 */
         #life-container { display: flex; align-items: center; gap: 2px; padding-right: 4px; margin-top: -2px; }
         #life-icon { width: 40px; height: 40px; object-fit: contain; }
-        #life-text { font-family: "Tomorrow", sans-serif; font-size: 18px; font-weight: 500; color: #000; letter-spacing: 0.5px; }
+        #life-text { font-family: "Tomorrow", sans-serif; font-size: 17px; font-weight: 500; color: #000; letter-spacing: 0.5px; }
 
         #result-screen { position: absolute; inset: 0; background:rgba(0,0,0,0.8); z-index:200; display:none; flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; }
     </style>
@@ -59,7 +59,7 @@
                 </div>
                 <div id="life-container">
                     <img id="life-icon" src="life.png">
-                    <span id="life-text">x 3</span>
+                    <span id="life-text">x3</span>
                 </div>
             </div>
         </div>
@@ -92,14 +92,9 @@
 
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
-            if (state === 'MAIN') {
-                forceStart();
-            } else if (state === 'PLAY') {
-                pDir *= -1;
-                windTimer = 0; windAlphaBase = 0;
-            } else if (state === 'END') {
-                location.reload();
-            }
+            if (state === 'MAIN') forceStart();
+            else if (state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; }
+            else if (state === 'END') location.reload();
         }
     });
 
@@ -183,13 +178,11 @@
         else objects.push({ x, y: spawnY, type: 'CRATE', img: imgs.crate });
     }
 
-    /* [생명표시UI 텍스트 업데이트 로직 유지] */
+    /* 라이프 UI 업데이트: 띄어쓰기 제거 */
     function updateLifeUI() { 
         const lifeTextEl = document.getElementById('life-text');
         if(lifeTextEl) {
-            lifeTextEl.innerText = 'x ' + lives;
-            if(lives <= 1) lifeTextEl.style.color = '#D4574B';
-            else lifeTextEl.style.color = '#000';
+            lifeTextEl.innerText = 'x' + lives;
         }
     }
 
@@ -250,7 +243,8 @@
 
     function draw() {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
-        ctx.fillStyle = '#B7E6F8'; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        ctx.fillStyle = '#BBE5FF'; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        
         clouds.forEach(c => { if(c.img.complete) { ctx.save(); ctx.globalAlpha = c.alpha; ctx.drawImage(c.img, c.x - (c.img.width*c.scale*2), c.y, c.img.width*c.scale*4, c.img.height*c.scale*4); ctx.restore(); } });
         ctx.save();
         if(dist < 150) {
@@ -258,6 +252,8 @@
             if(imgs.grass.complete) { ctx.fillStyle = '#71C8AD'; ctx.fillRect(0, landY, WIDTH, HEIGHT); for(let x = -2; x <= 2; x++) ctx.drawImage(imgs.grass, ((grassX * 1.0) % WIDTH) + (x * WIDTH), landY, WIDTH, imgs.grass.height); }
             if(imgs.target.complete) { const tW = imgs.target.width || 240, tH = imgs.target.height || 96; ctx.drawImage(imgs.target, pX - tW, landY + 180, tW * 2, tH * 2); }
         }
+        ctx.restore();
+
         if(state === 'PLAY' && windAlphaBase > 0) {
             let imgNormal, imgMove; if(pDir === 1) { imgNormal = imgs.windR; imgMove = imgs.windR_move; } else { imgNormal = imgs.windL; imgMove = imgs.windL_move; }
             if(imgNormal.complete && imgMove.complete) { ctx.save(); const s = 205; const baseX = WIDTH / 2 - s, baseY = 110 * 2; ctx.globalAlpha = windAlphaBase; ctx.drawImage(imgNormal, baseX, baseY, s * 2, s * 2); ctx.globalAlpha = windAlphaBase * (0.4 + Math.sin(frame * 0.25) * 0.4); ctx.drawImage(imgMove, baseX, baseY, s * 2, s * 2); ctx.restore(); }
