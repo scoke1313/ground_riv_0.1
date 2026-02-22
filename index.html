@@ -1,14 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.5 - PNG & Space Retry</title>
+    <title>둥둥그라운드 v1.8.5 - UI Precision Update</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        @import url('https://fonts.googleapis.com/css2?family=Tomorrow:wght@600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Tomorrow:wght@500;600;700&display=swap');
         
         body { margin: 0; padding: 0; background-color: #333; font-family: 'Pretendard', sans-serif; overflow: hidden; touch-action: none; user-select: none; display: flex; justify-content: center; align-items: center; height: 100vh; }
         #game-container { position: relative; width: 393px; height: 852px; overflow: hidden; background: #BBE5FF; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
@@ -25,12 +24,40 @@
         #altitude-area.is-danger .dist-val-wrap, #altitude-area.is-danger #dist-val, #altitude-area.is-danger .dist-unit { color: #D4574B !important; }
         .danger-pulse { animation: extreme-pulse 0.135s infinite alternate ease-in-out; }
         @keyframes extreme-pulse { from { transform: scale(1.0); } to { transform: scale(1.1); } }
+        
         .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-        .ingame-score-bg { background: #fff; height: 38px; width: 86px; padding: 0 10px; border-radius: 30px; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; }
+
+        /* 보급박스 UI 정밀 조정 */
+        .ingame-score-bg { 
+            background: #fff; 
+            height: 41px; 
+            width: 120px; 
+            padding: 0 12px; 
+            border-radius: 30px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            box-sizing: border-box; 
+        }
         .ingame-score-bg img { width: 28px; height: 28px; object-fit: contain; }
-        .ingame-score-bg span { font-family: "Tomorrow", sans-serif; font-size: 18px; font-weight: 600; color: #000; }
-        #life-container { display: flex; gap: 2px; padding-right: 4px; }
-        #life-container img { width: 28px; height: 28px; object-fit: contain; }
+        .ingame-score-bg span { 
+            font-family: "Tomorrow", sans-serif; 
+            font-size: 20px; 
+            font-weight: 600; 
+            color: #000; 
+        }
+
+        /* 라이프 UI 정밀 조정 */
+        #life-container { display: flex; align-items: center; gap: 4px; padding-right: 4px; margin-top: -2px; }
+        #life-icon { width: 40px; height: 40px; object-fit: contain; }
+        #life-text { 
+            font-family: "Tomorrow", sans-serif; 
+            font-size: 17px; 
+            font-weight: 500; 
+            color: #000; 
+            letter-spacing: 0.08em; 
+        }
+
         #result-screen { position: absolute; inset: 0; background:rgba(0,0,0,0.8); z-index:200; display:none; flex-direction:column; justify-content:center; align-items:center; color:white; text-align:center; }
     </style>
 </head>
@@ -55,9 +82,8 @@
                     <span id="score-val">0</span>
                 </div>
                 <div id="life-container">
-                    <img id="life-0" src="mini_life.svg">
-                    <img id="life-1" src="mini_life.svg">
-                    <img id="life-2" src="mini_life.svg">
+                    <img id="life-icon" src="life.png">
+                    <span id="life-text">x3</span>
                 </div>
             </div>
         </div>
@@ -74,7 +100,13 @@
 </div>
 
 <script>
-    /* --- Rive 및 키보드 제어 --- */
+    /* 라이프 UI 업데이트 함수 */
+    function updateLifeUI() { 
+        const lifeTextEl = document.getElementById('life-text');
+        if(lifeTextEl) { lifeTextEl.innerText = 'x' + lives; }
+    }
+
+    /* --- 원본 스크립트 그대로 보존 ( draw 함수 등 일절 수정 없음 ) --- */
     let riveInstance = null;
     function initRive() {
         riveInstance = new rive.Rive({
@@ -90,14 +122,9 @@
 
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
-            if (state === 'MAIN') {
-                forceStart();
-            } else if (state === 'PLAY') {
-                pDir *= -1;
-                windTimer = 0; windAlphaBase = 0;
-            } else if (state === 'END') {
-                location.reload(); // 결과창에서 스페이스바 누르면 재시작
-            }
+            if (state === 'MAIN') forceStart();
+            else if (state === 'PLAY') { pDir *= -1; windTimer = 0; windAlphaBase = 0; }
+            else if (state === 'END') location.reload();
         }
     });
 
@@ -112,7 +139,6 @@
         loop(); 
     }
 
-    /* --- 게임 물리 및 오디오 --- */
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -146,7 +172,6 @@
     canvas.width = WIDTH; canvas.height = HEIGHT;
     const ctx = canvas.getContext('2d');
     const imgs = {};
-    // 보급상자와 헬기를 PNG로 변경 
     const imgList = ['player', 'dong_chun.svg', 'face_happy', 'dong_chun_happy.svg', 'face_miss', 'dong_chun_miss.svg', 'crate', 'create_m.png', 'gold', 'gold.svg', 'heli', 'heli.png', 'cloud1', 'cloud_1.svg', 'cloud2', 'cloud_2.svg', 'cloud3', 'cloud_3.svg', 'land', '03_ingame_land.png', 'effect', 'effect_pickup.png', 'damage', 'damege.svg', 'mountain', 'surface_mountain.png', 'grass', 'surface_grass.png', 'target', 'surface_target.svg', 'windL', 'wind_L.svg', 'windR', 'wind_R.svg', 'windL_move', 'wind_L_move.svg', 'windR_move', 'wind_R_move.svg'];
     imgList.forEach((val, i) => { if(i % 2 === 0) { imgs[val] = new Image(); imgs[val].src = imgList[i+1]; } });
 
@@ -181,9 +206,7 @@
         else if(type === 'GOLD') objects.push({ x, y: spawnY, type: 'GOLD', img: imgs.gold });
         else objects.push({ x, y: spawnY, type: 'CRATE', img: imgs.crate });
     }
-    function updateLifeUI() { 
-        for(let i=0; i<3; i++) { const lifeEl = document.getElementById('life-' + i); if(lifeEl) lifeEl.src = (i >= (3 - lives)) ? 'mini_life.svg' : 'mini_death.svg'; } 
-    }
+
     function addCombo() {
         combo++; comboTimer = 30; popScale = 1.4;
         for(let i=0; i<8; i++) { comboParticles.push({ x: 250 * 2 + 20, y: (150 * 2) + 60, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, life: 30, size: Math.random() * 6 + 4 }); }
@@ -254,7 +277,6 @@
             if(imgNormal.complete && imgMove.complete) { ctx.save(); const s = 205; const baseX = WIDTH / 2 - s, baseY = 110 * 2; ctx.globalAlpha = windAlphaBase; ctx.drawImage(imgNormal, baseX, baseY, s * 2, s * 2); ctx.globalAlpha = windAlphaBase * (0.4 + Math.sin(frame * 0.25) * 0.4); ctx.drawImage(imgMove, baseX, baseY, s * 2, s * 2); ctx.restore(); }
         }
         
-        /* ★ PNG 스케일 최적화 (기존 사이즈 절반으로 렌더링하여 2배 고해상도 효과) ★ */
         objects.forEach(o => { 
             if(o.img.complete) { 
                 ctx.save(); 
