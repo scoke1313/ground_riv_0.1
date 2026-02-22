@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=393, height=852, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>둥둥그라운드 v1.8.5 - HUD Update</title>
+    <title>둥둥그라운드 v1.8.5 - PNG & Space Retry</title>
     <script src="https://unpkg.com/@rive-app/canvas@latest"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -14,26 +14,22 @@
         #main-screen { position: absolute; inset: 0; background: url('bg_main.png') no-repeat center center / cover; z-index: 100; }
         #rive-canvas { position: absolute; top: 0; left: 0; width: 393px; height: 852px; pointer-events: none; z-index: 105; }
         canvas { display: block; width: 100%; height: 100%; outline: none; -webkit-tap-highlight-color: transparent; }
-        
         #hud { position: absolute; top: 0; left: 0; width: 100%; z-index: 50; display: none; pointer-events: none; }
         .nav-bar img { width: 100%; display: block; }
         .hud-info { width: 100%; padding: 9px 20px 0; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start; }
-        
         .hud-left { display: flex; align-items: center; gap: 1px; }
         .hud-left img { width: 28px; height: 28px; object-fit: contain; }
         .dist-val-wrap { font-family: "Tomorrow", sans-serif; font-size: 36px; font-weight: 600; color: #000; letter-spacing: -1px; line-height: 1; display: flex; align-items: baseline; }
         .dist-unit { font-family: 'Pretendard', sans-serif; font-size: 20px; font-weight: 700; margin-left: 1px; color: inherit; }
-        
         #altitude-area.is-danger .dist-val-wrap, #altitude-area.is-danger #dist-val, #altitude-area.is-danger .dist-unit { color: #D4574B !important; }
         .danger-pulse { animation: extreme-pulse 0.135s infinite alternate ease-in-out; }
         @keyframes extreme-pulse { from { transform: scale(1.0); } to { transform: scale(1.1); } }
-        
         .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-        .ingame-score-bg { background: #fff; height: 38px; min-width: 86px; padding: 0 12px; border-radius: 30px; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .ingame-score-bg img { width: 20px; height: 20px; object-fit: contain; margin-right: 6px; }
+        .ingame-score-bg { background: #fff; height: 38px; width: 86px; padding: 0 10px; border-radius: 30px; display: flex; align-items: center; justify-content: space-between; box-sizing: border-box; }
+        .ingame-score-bg img { width: 28px; height: 28px; object-fit: contain; }
         .ingame-score-bg span { font-family: "Tomorrow", sans-serif; font-size: 18px; font-weight: 600; color: #000; }
-        
-        /* 라이프 UI 업데이트 (life.png 적용 및 간격 조정) */
+
+        /* 라이프 UI: 간격 2px, 숫자 17px, 컬러 블랙 고정 */
         #life-container { display: flex; align-items: center; gap: 2px; padding-right: 4px; margin-top: -2px; }
         #life-icon { width: 40px; height: 40px; object-fit: contain; }
         #life-text { font-family: "Tomorrow", sans-serif; font-size: 17px; font-weight: 500; color: #000; letter-spacing: 0.5px; }
@@ -63,7 +59,7 @@
                 </div>
                 <div id="life-container">
                     <img id="life-icon" src="life.png">
-                    <span id="life-text">x3</span>
+                    <span id="life-text">x 3</span>
                 </div>
             </div>
         </div>
@@ -80,13 +76,7 @@
 </div>
 
 <script>
-    /* HUD UI 전용 업데이트 함수 */
-    function updateLifeUI() { 
-        const lifeTextEl = document.getElementById('life-text');
-        if(lifeTextEl) { lifeTextEl.innerText = 'x' + lives; }
-    }
-
-    /* --- 이하 게임 로직 및 투명화 방지 draw 함수 (건드리지 않음) --- */
+    /* --- Rive 및 키보드 제어 --- */
     let riveInstance = null;
     function initRive() {
         riveInstance = new rive.Rive({
@@ -119,6 +109,7 @@
         loop(); 
     }
 
+    /* --- 게임 물리 및 오디오 --- */
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
         if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -187,6 +178,13 @@
         else objects.push({ x, y: spawnY, type: 'CRATE', img: imgs.crate });
     }
 
+    function updateLifeUI() { 
+        const lifeTextEl = document.getElementById('life-text');
+        if(lifeTextEl) {
+            lifeTextEl.innerText = 'x ' + lives;
+        }
+    }
+
     function addCombo() {
         combo++; comboTimer = 30; popScale = 1.4;
         for(let i=0; i<8; i++) { comboParticles.push({ x: 250 * 2 + 20, y: (150 * 2) + 60, vx: (Math.random() - 0.5) * 15, vy: (Math.random() - 0.5) * 15, life: 30, size: Math.random() * 6 + 4 }); }
@@ -246,7 +244,7 @@
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         ctx.fillStyle = '#BBE5FF'; ctx.fillRect(0, 0, WIDTH, HEIGHT);
         
-        clouds.forEach(c => { if(c.img && c.img.complete) { ctx.save(); ctx.globalAlpha = c.alpha; ctx.drawImage(c.img, c.x - (c.img.width*c.scale*2), c.y, c.img.width*c.scale*4, c.img.height*c.scale*4); ctx.restore(); } });
+        clouds.forEach(c => { if(c.img.complete) { ctx.save(); ctx.globalAlpha = c.alpha; ctx.drawImage(c.img, c.x - (c.img.width*c.scale*2), c.y, c.img.width*c.scale*4, c.img.height*c.scale*4); ctx.restore(); } });
         ctx.save();
         if(dist < 150) {
             if(imgs.mountain.complete) { const mW = imgs.mountain.width * 0.82, mH = imgs.mountain.height * 0.82; for(let x = -3; x <= 3; x++) ctx.drawImage(imgs.mountain, ((mountainX * 1.0) % mW) + (x * mW), landY - mH, mW, mH); }
@@ -261,7 +259,7 @@
         }
         
         objects.forEach(o => { 
-            if(o.img && o.img.complete) { 
+            if(o.img.complete) { 
                 ctx.save(); 
                 if(o.type === 'CRATE') { 
                     ctx.translate(o.x, o.y - (o.img.height/2)); 
@@ -279,36 +277,14 @@
             } 
         });
 
-        ctx.save(); 
-        let sX = (hitShakeFrame > 0) ? (Math.random() - 0.5) * 25 : 0; 
-        ctx.translate(pX + sX, pY + Math.sin(frame*0.08)*7.5); 
-        ctx.rotate(currentRotation); 
-        
+        ctx.save(); let sX = (hitShakeFrame > 0) ? (Math.random() - 0.5) * 25 : 0; ctx.translate(pX + sX, pY + Math.sin(frame*0.08)*7.5); ctx.rotate(currentRotation); 
         let pImg = (faceTimer > 0) ? (currentFace === 'happy' ? imgs.face_happy : imgs.face_miss) : imgs.player;
-        if(faceTimer > 0) faceTimer--; 
-
-        if(pImg && pImg.complete && pImg.naturalWidth !== 0) {
-            ctx.drawImage(pImg, -pImg.width, -pImg.height, pImg.width * 2, pImg.height * 2); 
-        } else {
-            ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fillStyle = '#FEE500'; ctx.fill();
-        }
-        ctx.restore();
-
-        fx.forEach(f => { if(f.img && f.img.complete) { ctx.save(); ctx.globalAlpha = Math.min(1, f.life / 20); if(f.isEffect) { ctx.drawImage(f.img, f.x - f.img.width / 2, f.y - f.img.height / 2, f.img.width, f.img.height); } else { ctx.drawImage(f.img, f.x - f.img.width, f.y - f.img.height, f.img.width * 2, f.img.height * 2); } ctx.restore(); } });
-        
+        if(faceTimer > 0) faceTimer--; if(pImg.complete) ctx.drawImage(pImg, -pImg.width, -pImg.height, pImg.width * 2, pImg.height * 2); ctx.restore();
+        fx.forEach(f => { if(f.img.complete) { ctx.save(); ctx.globalAlpha = Math.min(1, f.life / 20); if(f.isEffect) { ctx.drawImage(f.img, f.x - f.img.width / 2, f.y - f.img.height / 2, f.img.width, f.img.height); } else { ctx.drawImage(f.img, f.x - f.img.width, f.y - f.img.height, f.img.width * 2, f.img.height * 2); } ctx.restore(); } });
         comboParticles.forEach(p => { ctx.fillStyle = '#FFEF6B'; ctx.globalAlpha = p.life / 30; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); });
-        
+        ctx.restore(); 
         if(combo > 1 || isGoldFever) {
-            ctx.save(); 
-            const comboX = 250 * 2, comboY = (150 * 2) + 32; 
-            ctx.translate(comboX, comboY); 
-            ctx.scale(popScale, popScale); 
-            ctx.translate(-comboX, -comboY); 
-            ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.lineJoin = 'round'; ctx.lineWidth = 10; 
-            ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = (combo >= 20) ? '#A45AE4' : '#5094F9'; 
-            ctx.font = '700 80px "Tomorrow"'; 
-            ctx.strokeText(combo, comboX, comboY); ctx.fillText(combo, comboX, comboY); 
-            ctx.restore();
+            ctx.save(); const comboX = 250 * 2, comboY = (150 * 2) + 32; ctx.translate(comboX, comboY); ctx.scale(popScale, popScale); ctx.translate(-comboX, -comboY); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.lineJoin = 'round'; ctx.lineWidth = 10; ctx.filter = 'blur(0.5px)'; ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = (combo >= 20) ? '#A45AE4' : '#5094F9'; ctx.font = '700 80px "Tomorrow"'; ctx.strokeText(combo, comboX, comboY); ctx.fillText(combo, comboX, comboY); ctx.font = '700 32px "Pretendard"'; ctx.strokeText((combo >= 20) ? 'COMBO x2' : 'COMBO', comboX, comboY + 80); ctx.fillText((combo >= 20) ? 'COMBO x2' : 'COMBO', comboX, comboY + 80); ctx.filter = 'none'; ctx.restore();
         }
     }
     draw();
